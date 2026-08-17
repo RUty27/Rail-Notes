@@ -1,0 +1,61 @@
+name: Android APK
+
+# Builds an installable APK you can sideload straight onto your phone.
+# Run it from the Actions tab, or let it fire on every push to main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # compileSdk 36 may not be on the runner image; this installs what's
+      # missing and accepts the SDK licences so Gradle doesn't stall on them.
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync web assets into the Android project
+        run: npx cap sync android
+
+      # git on Windows doesn't preserve the executable bit, so gradlew arrives
+      # unrunnable on a Linux runner. Cheaper to always set it than to debug it.
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # An unsigned release build can't be installed, so the debug APK is the
+      # deliverable. It sideloads fine and never expires. For the Play Store,
+      # add a keystore and a signing block in android/app/build.gradle.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rail-notes-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report failure details
+        if: failure()
+        run: |
+          echo "::group::Gradle report"
+          find android -name '*.txt' -path '*reports*' -exec echo '--- {} ---' \; -exec cat {} \; 2>/dev/null | head -100
+          echo "::endgroup::"

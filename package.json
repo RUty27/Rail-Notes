@@ -1,0 +1,22 @@
+{
+  "name": "rail-notes",
+  "version": "1.0.0",
+  "description": "Voice-first cocktail idea capture that recalls what you have already used",
+  "scripts": {
+    "sync": "npx cap sync",
+    "ios:prepare": "node scripts/add-ios-plugin.js && npx cap sync ios",
+    "android:apk": "npx cap sync android && cd android && gradlew.bat assembleDebug"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0"
+  },
+  "private": true
+}

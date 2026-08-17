@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="format-detection" content="telephone=no" />
+<title>Rail Notes</title>
+<style>
+  /* Palette lifted from Cocktail Vault: warm paper, deep green ink, orange + lime accents.
+     Committed single light theme — every colour painted explicitly so it holds on any host ground. */
+  :root {
+    color-scheme: light;
+    --paper:  #F3EFE5;
+    --card:   #FFFDF7;
+    --ink:    #172C25;
+    --muted:  #6F786F;
+    --line:   #D9D5C9;
+    --orange: #E96B3D;
+    --orange-ring: #F1CBBD;
+    --orange-wash: #FBEAE2;
+    --lime:   #DFF08F;
+    --lime-deep: #6E7F2A;
+    --white:  #FFFFFF;
+    --shadow: 0 18px 60px rgba(23, 44, 37, .05);
+    --shadow-sm: 0 6px 18px rgba(23, 44, 37, .04);
+
+    --serif: "DM Serif Display", Didot, "Bodoni 72", "Hoefler Text", "Playfair Display", Georgia, serif;
+    --sans: Geist, ui-sans-serif, -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--paper); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    -webkit-user-select: none; user-select: none;
+    overscroll-behavior-y: contain;
+  }
+  input, textarea, .body, .note, table { -webkit-user-select: text; user-select: text; }
+  :focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; border-radius: 6px; }
+
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 0 1.15rem; }
+
+  /* ── eyebrow: 12/800/uppercase, orange ── */
+  .eyebrow {
+    font-size: .75rem; font-weight: 800; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--orange); margin: 0;
+  }
+  .eyebrow.quiet { color: var(--muted); }
+
+  /* ── chrome ── */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    padding-top: env(safe-area-inset-top);
+    background: rgba(243, 239, 229, .92);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar { display: flex; align-items: center; gap: .6rem; padding: .85rem 0 .6rem; }
+  .diamond { color: var(--orange); font-size: 1rem; line-height: 1; }
+  .wordmark { font-family: var(--serif); font-size: 1.35rem; font-weight: 400; letter-spacing: -.02em; margin: 0; }
+  .tally {
+    margin-left: auto; font-family: var(--mono); font-size: .68rem;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+
+  nav.tabs { display: flex; gap: .3rem; padding-bottom: .7rem; }
+  nav.tabs button {
+    font: inherit; font-size: .9rem; color: var(--muted);
+    padding: .55rem .9rem; border-radius: 99px; border: 0;
+    background: transparent; cursor: pointer;
+  }
+  nav.tabs button[aria-selected="true"] {
+    background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm);
+  }
+
+  main { padding-top: 1.4rem; display: flex; flex-direction: column; gap: 1.15rem; }
+  .panel { display: flex; flex-direction: column; gap: 1.15rem; }
+  .panel[hidden] { display: none; }
+
+  /* ── hero ── */
+  .hero { display: flex; flex-direction: column; gap: .8rem; padding: .6rem 0 .5rem; }
+  .hero h2 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(2.5rem, 11.5vw, 4.4rem);
+    line-height: .93; letter-spacing: -.03em;
+    margin: 0; text-wrap: balance;
+  }
+  .hero p { margin: 0; color: var(--muted); font-size: 1.02rem; max-width: 32rem; }
+  .hero .foot { font-family: var(--mono); font-size: .7rem; color: var(--muted); letter-spacing: .02em; }
+
+  /* ── cards ── */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: var(--shadow);
+    padding: 1.35rem;
+    display: flex; flex-direction: column; gap: .85rem;
+  }
+  .card-head { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .card-head .stamp {
+    margin-left: auto; font-family: var(--mono); font-size: .7rem; color: var(--muted);
+  }
+  h3.sect { font-family: var(--serif); font-weight: 400; font-size: 1.5rem; letter-spacing: -.02em; margin: 0; }
+  .lede { margin: 0; color: var(--muted); font-size: .88rem; }
+
+  /* ── fields ── */
+  textarea, input[type="text"], input[type="datetime-local"] {
+    font: inherit; width: 100%; color: var(--ink);
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 14px; padding: .75rem .85rem;
+  }
+  textarea { min-height: 9rem; resize: vertical; line-height: 1.6; }
+  textarea::placeholder, input::placeholder { color: #A7ACA4; }
+  input[type="datetime-local"] { font-family: var(--mono); font-size: .85rem; }
+
+  .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1 1 8rem; min-width: 0; }
+
+  /* ── segmented control (radius 9) ── */
+  .seg { display: flex; gap: .35rem; }
+  .seg button {
+    font: inherit; font-size: .82rem; color: var(--muted);
+    background: transparent; border: 0; border-radius: 9px;
+    padding: .5rem .75rem; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .seg button:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── buttons ── */
+  button.btn {
+    font: inherit; font-size: .9rem; cursor: pointer;
+    padding: .7rem 1.15rem; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--white); color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  }
+  button.btn.solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: .6rem .8rem; }
+  button.btn.warn { color: var(--orange); border-color: var(--orange-ring); }
+  button.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── the record dial: orange circle in a pale ring ── */
+  .dial-zone { display: flex; align-items: center; gap: 1rem; padding: .3rem 0; }
+  button.dial {
+    width: 4.5rem; height: 4.5rem; flex: 0 0 auto;
+    border-radius: 50%; cursor: pointer;
+    background: var(--orange); color: var(--white);
+    border: 9px solid var(--orange-ring);
+    font-size: 1.1rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .18s ease, background .18s ease;
+  }
+  button.dial:active { transform: scale(.95); }
+  button.dial[data-live="true"] { background: var(--ink); border-color: #C9D2C6; animation: breathe 1.5s ease-in-out infinite; }
+  @keyframes breathe { 50% { border-color: var(--orange-ring); } }
+  @media (prefers-reduced-motion: reduce) { button.dial[data-live="true"] { animation: none; } }
+  .dial-copy { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+  .dial-copy .clock { font-family: var(--mono); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  .dial-copy .say { font-size: .84rem; color: var(--muted); }
+
+  .hint { font-size: .82rem; color: var(--muted); margin: 0; }
+  .hint b { color: var(--ink); font-weight: 600; }
+
+  /* ── ingredient chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .chip {
+    font-size: .78rem; padding: .3rem .6rem; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--white);
+    display: inline-flex; align-items: center; gap: .4rem;
+  }
+  .chip.known { background: var(--lime); border-color: var(--lime); color: #2C3A12; }
+  .chip.fresh { background: var(--orange-wash); border-color: var(--orange-ring); color: #8A3818; }
+  .chip .n { font-family: var(--mono); font-size: .72rem; opacity: .65; }
+  .chip .x { cursor: pointer; opacity: .55; line-height: 1; font-size: .95rem; }
+
+  mark { background: var(--lime); color: #2C3A12; padding: .05em .2em; border-radius: 5px; }
+
+  /* ── recall ── */
+  .recall { display: flex; flex-direction: column; }
+  .recall-item {
+    display: flex; flex-direction: column; gap: .1rem;
+    padding: .7rem 0; border-top: 1px solid var(--line);
+  }
+  .recall-item:first-child { border-top: 0; padding-top: .2rem; }
+  .recall-head { display: flex; align-items: center; gap: .5rem; font-size: .98rem; }
+  .recall-head .pip { width: .5rem; height: .5rem; border-radius: 50%; background: var(--lime-deep); flex: 0 0 auto; }
+  .recall-item.fresh .pip { background: var(--orange); }
+  .recall-head .tagword {
+    margin-left: auto; font-size: .68rem; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--lime-deep);
+  }
+  .recall-item.fresh .tagword { color: var(--orange); }
+  .recall-sub { font-size: .85rem; color: var(--muted); padding-left: 1rem; }
+  .recall-sub em { font-style: normal; color: var(--ink); }
+
+  /* ── saved notes ── */
+  .note {
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+    padding: 1.15rem; box-shadow: var(--shadow); margin-bottom: 1rem;
+    display: flex; flex-direction: column; gap: .65rem;
+  }
+  .note-top { display: flex; align-items: center; gap: .5rem; }
+  .note .when { font-family: var(--mono); font-size: .7rem; color: var(--muted); letter-spacing: .02em; }
+  .note .body { white-space: pre-wrap; font-size: 1rem; line-height: 1.6; }
+  .note audio { width: 100%; height: 2.2rem; }
+
+  /* ── index table ── */
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  td.count { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  .empty { color: var(--muted); font-size: .9rem; }
+  footer { text-align: center; font-family: var(--mono); font-size: .68rem; color: var(--muted); padding: 1.8rem 0 0; }
+  .rule { height: 1px; background: var(--line); border: 0; margin: 0; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="topbar">
+      <span class="diamond" aria-hidden="true">◆</span>
+      <h1 class="wordmark">Rail Notes</h1>
+      <span class="tally" id="tally"></span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-capture" aria-selected="true" aria-controls="panel-capture">＋ Capture</button>
+      <button role="tab" id="tab-log" aria-selected="false" aria-controls="panel-log">◫ Ideas</button>
+      <button role="tab" id="tab-library" aria-selected="false" aria-controls="panel-library">◇ Library</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ───────── CAPTURE ───────── -->
+  <section class="panel" id="panel-capture" role="tabpanel" aria-labelledby="tab-capture">
+    <div class="hero">
+      <p class="eyebrow">Your private bar notebook</p>
+      <h2>Catch the idea<br />before it evaporates.</h2>
+      <p>Speak it or type it. Rail Notes ties every thought back to the ingredients and recipes you already keep.</p>
+      <span class="foot">Stored on this device only · nothing is generated</span>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 class="sect">New idea</h3>
+        <span class="stamp" id="stamp"></span>
+      </div>
+
+      <div class="seg" role="group" aria-label="Input mode">
+        <button id="mode-speak" aria-pressed="true">Speak</button>
+        <button id="mode-clip" aria-pressed="false">Audio clip</button>
+        <button id="mode-type" aria-pressed="false">Type</button>
+      </div>
+
+      <div class="dial-zone" id="dialZone">
+        <button class="dial" id="dial" data-live="false" aria-label="Start dictation">●</button>
+        <div class="dial-copy">
+          <span class="clock" id="clock">00:00</span>
+          <span class="say" id="say">Tap to dictate — words land in the box below.</span>
+        </div>
+      </div>
+
+      <textarea id="text" placeholder="Mezcal, pandan syrup, lime, tiny pinch of salt — pandan might be too soft against the smoke, try a screwpine cordial instead…"></textarea>
+
+      <div class="row">
+        <input type="datetime-local" id="when" class="grow" aria-label="Date and time" />
+        <button class="btn ghost" id="nowBtn">Now</button>
+      </div>
+
+      <div class="row">
+        <input type="text" id="addIng" class="grow" placeholder="Add an ingredient by hand" aria-label="Add an ingredient by hand" />
+        <button class="btn" id="addIngBtn">Add</button>
+      </div>
+      <div class="chips" id="manualChips"></div>
+
+      <hr class="rule" />
+      <div class="row">
+        <button class="btn solid grow" id="save">Save idea</button>
+        <button class="btn ghost" id="clear">Clear</button>
+      </div>
+      <p class="hint" id="clipNote" hidden></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <p class="eyebrow">Live recall</p>
+      </div>
+      <h3 class="sect">From your archive</h3>
+      <p class="lede">Matches appear as you speak or type. Nothing here is invented — it only tells you what you've already done.</p>
+      <div class="recall" id="recall"></div>
+    </div>
+
+    <div class="card" id="previewCard" hidden>
+      <p class="eyebrow quiet">Marked up</p>
+      <div class="body" id="preview"></div>
+    </div>
+  </section>
+
+  <!-- ───────── IDEAS ───────── -->
+  <section class="panel" id="panel-log" role="tabpanel" aria-labelledby="tab-log" hidden>
+    <div class="hero">
+      <p class="eyebrow">Everything you've caught</p>
+      <h2>Ideas.</h2>
+    </div>
+    <div class="card">
+      <input type="text" id="search" placeholder="Search notes and ingredients" aria-label="Search notes" />
+      <p class="hint" id="logCount"></p>
+    </div>
+    <div id="notes"></div>
+  </section>
+
+  <!-- ───────── LIBRARY ───────── -->
+  <section class="panel" id="panel-library" role="tabpanel" aria-labelledby="tab-library" hidden>
+    <div class="hero">
+      <p class="eyebrow">Recipe history</p>
+      <h2>Library.</h2>
+    </div>
+
+    <div class="card">
+      <h3 class="sect">Bring in your sheet</h3>
+      <p class="lede">Select the rows in Excel or Google Sheets, copy, paste below. First row is headers. It finds a name column and an ingredients column, splits on commas, and strips quantities — <b>45ml mezcal</b> files as <b>mezcal</b>.</p>
+      <textarea id="paste" placeholder="Name&#9;Ingredients&#9;Notes&#10;Negroni Riff&#9;gin, campari, cocchi di torino&#9;stirred, big rock"></textarea>
+      <div class="row">
+        <button class="btn solid" id="importBtn">Import rows</button>
+        <label class="btn" for="fileIn">Choose CSV file</label>
+        <input type="file" id="fileIn" accept=".csv,.tsv,.txt" style="position:absolute;width:1px;height:1px;opacity:0" />
+        <button class="btn ghost warn" id="wipeLib">Clear library</button>
+      </div>
+      <p class="hint" id="importMsg"></p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Google Sheets</p>
+      <h3 class="sect">Two-way sync</h3>
+      <p class="lede">Pulls your recipes down and pushes new ideas up, straight into one spreadsheet. Needs the bridge script installed on that sheet once — <b>Extensions → Apps Script</b>, deploy as a web app, paste the URL here.</p>
+      <input type="text" id="gsUrl" placeholder="https://script.google.com/macros/s/…/exec" aria-label="Web app URL" spellcheck="false" />
+      <input type="text" id="gsKey" placeholder="Shared key" aria-label="Shared key" spellcheck="false" />
+      <div class="row">
+        <button class="btn solid" id="gsPull">Pull recipes</button>
+        <button class="btn" id="gsPush">Push ideas</button>
+        <button class="btn ghost" id="gsSave">Remember</button>
+      </div>
+      <p class="hint" id="gsMsg"></p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow quiet">Ingredient index</p>
+      <h3 class="sect">Everything you've poured</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Ingredient</th><th>Recipes</th><th>Notes</th><th>Last seen in</th></tr></thead>
+          <tbody id="indexBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow quiet">Back out</p>
+      <h3 class="sect">Send it to a sheet</h3>
+      <p class="lede">Copies every saved idea as CSV — paste straight into Excel or Sheets.</p>
+      <div class="row">
+        <button class="btn" id="copyCsv">Copy as CSV</button>
+        <button class="btn ghost" id="showCsv">Show text</button>
+      </div>
+      <textarea id="csvOut" hidden readonly></textarea>
+    </div>
+  </section>
+
+  <footer>Rail Notes · everything stays on this device</footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ─────────── storage ─────────── */
+  var K_NOTES = "railnotes.notes.v1", K_LIB = "railnotes.library.v1";
+  function load(k, fb) { try { var v = JSON.parse(localStorage.getItem(k)); return v || fb; } catch (e) { return fb; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { alert("Couldn't save — this device's storage is full."); } }
+
+  var notes = load(K_NOTES, []);      // {id, when, text, manual:[], clip:bool}
+  var library = load(K_LIB, []);      // {name, ingredients:[], notes}
+
+  /* audio clips live in IndexedDB (too big for localStorage) */
+  var db = null;
+  function openDB() {
+    return new Promise(function (res) {
+      if (db) return res(db);
+      if (!window.indexedDB) return res(null);
+      var r = indexedDB.open("railnotes-audio", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("clips"); };
+      r.onsuccess = function () { db = r.result; res(db); };
+      r.onerror = function () { res(null); };
+    });
+  }
+  function putClip(id, blob) {
+    return openDB().then(function (d) {
+      if (!d) return false;
+      return new Promise(function (res) {
+        var t = d.transaction("clips", "readwrite");
+        t.objectStore("clips").put(blob, id);
+        t.oncomplete = function () { res(true); };
+        t.onerror = function () { res(false); };
+      });
+    });
+  }
+  function getClip(id) {
+    return openDB().then(function (d) {
+      if (!d) return null;
+      return new Promise(function (res) {
+        var t = d.transaction("clips", "readonly"), q = t.objectStore("clips").get(id);
+        q.onsuccess = function () { res(q.result || null); };
+        q.onerror = function () { res(null); };
+      });
+    });
+  }
+  function delClip(id) { openDB().then(function (d) { if (d) d.transaction("clips", "readwrite").objectStore("clips").delete(id); }); }
+
+  /* ─────────── ingredient lexicon ─────────── */
+  var SEED = ("gin,london dry,old tom,sloe gin,genever,vodka,white rum,dark rum,aged rum,overproof rum,rhum agricole,cachaca,tequila,blanco tequila,reposado,anejo,mezcal,bourbon,rye,scotch,islay scotch,blended scotch,irish whiskey,japanese whisky,cognac,armagnac,brandy,calvados,pisco,shochu,soju,baijiu,aquavit," +
+  "campari,aperol,cynar,fernet branca,amaro nonino,amaro montenegro,braulio,suze,cocchi americano,lillet blanc,dry vermouth,sweet vermouth,cocchi di torino,punt e mes,carpano antica,blanc vermouth,sherry,fino sherry,amontillado,oloroso,pedro ximenez,port,madeira,marsala,sake,prosecco,champagne,cava,dry curacao,triple sec,cointreau,grand marnier,maraschino,luxardo,creme de cassis,creme de violette,creme de menthe,creme de cacao,chartreuse,green chartreuse,yellow chartreuse,benedictine,drambuie,st germain,elderflower liqueur,falernum,allspice dram,pimento dram,absinthe,pastis,ouzo,limoncello,amaretto,frangelico,kahlua,coffee liqueur,baileys,advocaat,chambord,midori,blue curacao,peach schnapps,apple brandy,cherry heering," +
+  "lime,lime juice,lemon,lemon juice,orange,orange juice,blood orange,grapefruit,grapefruit juice,pineapple,pineapple juice,cranberry,passion fruit,passionfruit,calamansi,yuzu,kumquat,mango,lychee,guava,watermelon,strawberry,raspberry,blackberry,blueberry,banana,coconut,coconut cream,coconut water,cucumber,tomato,celery,apple,pear,peach,apricot,plum,fig,rhubarb,tamarind,pomegranate," +
+  "simple syrup,rich syrup,demerara syrup,gum syrup,honey,honey syrup,agave,agave nectar,maple syrup,brown sugar,caster sugar,palm sugar,gomme,orgeat,grenadine,raspberry syrup,vanilla syrup,cinnamon syrup,ginger syrup,pandan syrup,pandan,screwpine,lemongrass,kaffir lime,kaffir lime leaf,curry leaf,thai basil,basil,mint,shiso,rosemary,thyme,sage,lavender,jasmine,osmanthus,chrysanthemum,butterfly pea,hibiscus,rose,rose water,orange blossom water,elderflower,chamomile," +
+  "angostura,angostura bitters,orange bitters,peychaud,peychauds,celery bitters,chocolate bitters,walnut bitters,cardamom bitters,grapefruit bitters,tiki bitters,saline,salt,sea salt,saline solution,citric acid,malic acid,tartaric acid,acid phosphate,verjus,vinegar,sherry vinegar,balsamic,shrub,kombucha,verbena," +
+  "soda water,club soda,tonic,tonic water,ginger beer,ginger ale,cola,coconut milk,milk,cream,heavy cream,condensed milk,evaporated milk,egg white,egg yolk,whole egg,aquafaba,yogurt,oat milk,almond milk,butter,brown butter,cacao,cocoa,chocolate,espresso,coffee,cold brew,matcha,green tea,black tea,earl grey,oolong,pu erh,genmaicha,houjicha,barley tea," +
+  "ginger,galangal,turmeric,chili,bird's eye chili,jalapeno,szechuan pepper,black pepper,pink peppercorn,cardamom,clove,star anise,cinnamon,nutmeg,mace,juniper,coriander,cumin,fennel,anise,saffron,vanilla,tonka,pandanus,sesame,pistachio,walnut,pecan,peanut,macadamia,hazelnut,almond,miso,soy sauce,fish sauce,worcestershire,tabasco,olive brine,pickle brine,olive,cherry,luxardo cherry,orange twist,lemon twist,grapefruit twist,mint sprig,edible flower,nori,pandan leaf,smoked ice,clear ice,crushed ice"
+  ).split(",");
+
+  function norm(s) { return String(s).toLowerCase().replace(/[’']/g, "").replace(/\s+/g, " ").trim(); }
+  /* length-preserving lowercase, so highlight offsets map 1:1 onto the original text */
+  function normKeep(s) { return String(s).toLowerCase().replace(/[’]/g, "'"); }
+
+  /* ─────────── index over library + notes ─────────── */
+  var index = {};   // normTerm -> {term, recipes:[names], noteIds:[]}
+  function bump(term, recipe, noteId) {
+    var k = norm(term); if (!k) return;
+    if (!index[k]) index[k] = { term: k, recipes: [], noteIds: [] };
+    if (recipe && index[k].recipes.indexOf(recipe) < 0) index[k].recipes.push(recipe);
+    if (noteId && index[k].noteIds.indexOf(noteId) < 0) index[k].noteIds.push(noteId);
+  }
+  var lexicon = [];
+  function rebuild() {
+    index = {};
+    library.forEach(function (r) {
+      r.ingredients.forEach(function (i) { bump(i, r.name || "(unnamed)", null); });
+    });
+    notes.forEach(function (n) {
+      detect(n.text, false).concat((n.manual || []).map(norm)).forEach(function (t) { bump(t, null, n.id); });
+    });
+    var set = {};
+    SEED.concat(Object.keys(index)).forEach(function (t) { var k = norm(t); if (k) set[k] = 1; });
+    lexicon = Object.keys(set).sort(function (a, b) { return b.length - a.length; });   // longest first
+  }
+
+  /* find lexicon terms inside free text, longest-match, non-overlapping */
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function detect(text, wantSpans) {
+    var hay = wantSpans ? normKeep(text) : norm(text);
+    var taken = new Array(hay.length).fill(false), out = [], spans = [];
+    for (var i = 0; i < lexicon.length; i++) {
+      var t = lexicon[i];
+      var re = new RegExp("(^|[^a-z])" + esc(t) + "(?![a-z])", "g"), m;
+      while ((m = re.exec(hay)) !== null) {
+        var s = m.index + m[1].length, e = s + t.length, free = true;
+        for (var j = s; j < e; j++) if (taken[j]) { free = false; break; }
+        if (!free) { re.lastIndex = e; continue; }
+        for (var j2 = s; j2 < e; j2++) taken[j2] = true;
+        if (out.indexOf(t) < 0) out.push(t);
+        spans.push([s, e, t]);
+        re.lastIndex = e;
+      }
+    }
+    return wantSpans ? { terms: out, spans: spans.sort(function (a, b) { return a[0] - b[0]; }) } : out;
+  }
+
+  function escHtml(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function highlight(text) {
+    var d = detect(text, true), hay = String(text), html = "", cur = 0;
+    d.spans.forEach(function (sp) {
+      html += escHtml(hay.slice(cur, sp[0])) + "<mark>" + escHtml(hay.slice(sp[0], sp[1])) + "</mark>";
+      cur = sp[1];
+    });
+    return html + escHtml(hay.slice(cur));
+  }
+
+  /* ─────────── DOM ─────────── */
+  function $(id) { return document.getElementById(id); }
+  var elText = $("text"), elWhen = $("when"), elRecall = $("recall"), elPreview = $("preview"),
+      elPreviewCard = $("previewCard"), elChips = $("manualChips"), elNotes = $("notes");
+  var manual = [], pendingClip = null;
+
+  function localNow() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function prettyWhen(v) {
+    var d = new Date(v); if (isNaN(d)) return v;
+    return d.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function syncStamp() { $("stamp").textContent = prettyWhen(elWhen.value || localNow()); }
+
+  /* ─────────── tabs ─────────── */
+  ["capture", "log", "library"].forEach(function (name) {
+    $("tab-" + name).addEventListener("click", function () {
+      ["capture", "log", "library"].forEach(function (n) {
+        var sel = n === name;
+        $("tab-" + n).setAttribute("aria-selected", sel ? "true" : "false");
+        $("panel-" + n).hidden = !sel;
+      });
+      if (name === "log") renderNotes();
+      if (name === "library") renderIndex();
+      window.scrollTo(0, 0);
+    });
+  });
+
+  /* ─────────── input mode ─────────── */
+  var MODES = ["speak", "clip", "type"], mode = "speak";
+  MODES.forEach(function (m) {
+    $("mode-" + m).addEventListener("click", function () {
+      mode = m;
+      MODES.forEach(function (x) { $("mode-" + x).setAttribute("aria-pressed", x === m ? "true" : "false"); });
+      $("dialZone").hidden = (m === "type");
+      resetDialCopy();
+      if (m === "type") elText.focus();
+    });
+  });
+  function resetDialCopy() {
+    $("clock").textContent = "00:00";
+    $("say").textContent = mode === "clip"
+      ? "Tap to record. The audio itself gets attached to this idea."
+      : (haveDictation() ? "Tap to dictate — words land in the box below."
+            : "Live dictation isn't available here. Tap the box and use your keyboard's microphone key.");
+  }
+
+  var ticker = null, t0 = 0;
+  function startClock() {
+    t0 = Date.now();
+    var tick = function () {
+      var s = Math.floor((Date.now() - t0) / 1000);
+      $("clock").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    };
+    tick(); ticker = setInterval(tick, 500);
+  }
+  function stopClock() { clearInterval(ticker); ticker = null; }
+
+  /* ─────────── the dial ─────────── */
+  var dial = $("dial");
+  dial.addEventListener("click", function () {
+    if (mode === "clip") toggleRecord();
+    else toggleDictate();
+  });
+  function setLive(on, label) {
+    dial.dataset.live = on ? "true" : "false";
+    dial.textContent = on ? "■" : "●";
+    dial.setAttribute("aria-label", on ? "Stop" : (mode === "clip" ? "Start recording" : "Start dictation"));
+    if (label) $("say").textContent = label;
+  }
+
+  /* ── dictation ──────────────────────────────────────────────────────
+     Native builds use the platform speech engine through the Capacitor
+     plugin — Apple's Speech framework, Android's SpeechRecognizer. Both
+     beat the browser API and work offline on recent OS versions. When the
+     same file is opened in a plain browser it falls back to Web Speech. */
+  var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  var SRP = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.SpeechRecognition : null;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, recOn = false, baseText = "";
+  var partialSub = null;
+
+  function haveDictation() { return (NATIVE && SRP) || !!SR; }
+
+  function toggleDictate() {
+    if (NATIVE && SRP) return nativeDictate();
+    if (!SR) { elText.focus(); return; }
+    if (recOn) { rec.stop(); return; }
+    rec = new SR();
+    rec.continuous = true; rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+    baseText = elText.value ? elText.value.replace(/\s*$/, "") + " " : "";
+    rec.onresult = function (ev) {
+      var out = "";
+      for (var i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
+      elText.value = baseText + out;
+      if (ev.results[ev.results.length - 1].isFinal) baseText = elText.value.replace(/\s*$/, "") + " ";
+      renderRecall();
+    };
+    rec.onerror = function (ev) {
+      $("say").textContent = ev.error === "not-allowed"
+        ? "Microphone blocked. Allow it in settings, or use your keyboard's microphone key."
+        : "Dictation stopped (" + ev.error + "). Your keyboard's microphone key still works.";
+    };
+    rec.onend = function () { recOn = false; stopClock(); setLive(false); };
+    try { rec.start(); recOn = true; startClock(); setLive(true, "Listening. Tap to stop."); }
+    catch (e) { recOn = false; }
+  }
+
+  function endNative(label) {
+    recOn = false;
+    stopClock();
+    setLive(false, label);
+    if (partialSub && partialSub.remove) { partialSub.remove(); }
+    partialSub = null;
+  }
+
+  function nativeDictate() {
+    if (recOn) { SRP.stop().catch(function () {}); endNative("Stopped."); return; }
+
+    SRP.checkPermissions()
+      .then(function (p) {
+        return (p && p.speechRecognition === "granted") ? p : SRP.requestPermissions();
+      })
+      .then(function (p) {
+        if (!p || p.speechRecognition !== "granted") {
+          endNative("Microphone and speech access are off. Turn them on in Settings, or use your keyboard's microphone key.");
+          return;
+        }
+        baseText = elText.value ? elText.value.replace(/\s*$/, "") + " " : "";
+
+        /* live UI goes up only once we're actually about to listen */
+        recOn = true; startClock(); setLive(true, "Listening. Tap to stop.");
+
+        return SRP.addListener("partialResults", function (data) {
+          var line = data && data.matches && data.matches.length ? data.matches[0] : "";
+          if (!line) return;
+          elText.value = baseText + line;
+          renderRecall();
+        }).then(function (sub) {
+          partialSub = sub;
+          /* resolves when the engine stops — either our stop() or its own timeout */
+          return SRP.start({ language: navigator.language || "en-US", partialResults: true, popup: false });
+        }).then(function (res) {
+          if (res && res.matches && res.matches.length) {
+            elText.value = baseText + res.matches[0];
+            renderRecall();
+          }
+          endNative("Got it. Tap to add more.");
+        });
+      })
+      .catch(function (e) {
+        endNative("Dictation couldn't start (" + (e && e.message ? e.message : "unknown") + ").");
+      });
+  }
+
+  /* audio clip (MediaRecorder) */
+  var mr = null, chunks = [];
+  function toggleRecord() {
+    if (mr && mr.state === "recording") { mr.stop(); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      $("say").textContent = "This browser can't record audio. Dictation and typing still work.";
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      chunks = [];
+      mr = new MediaRecorder(stream);
+      mr.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+      mr.onstop = function () {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        pendingClip = new Blob(chunks, { type: mr.mimeType || "audio/mp4" });
+        stopClock(); setLive(false, "Clip attached (" + Math.round(pendingClip.size / 1024) + " KB). Save to keep it.");
+      };
+      mr.start(); startClock();
+      setLive(true, "Recording. Tap to stop.");
+    }).catch(function () {
+      $("say").textContent = "Microphone blocked. Allow it in Safari's site settings for this page.";
+    });
+  }
+
+  /* ─────────── recall ─────────── */
+  function renderRecall() {
+    var terms = detect(elText.value, false);
+    manual.forEach(function (m) { if (terms.indexOf(norm(m)) < 0) terms.push(norm(m)); });
+
+    if (!terms.length) {
+      elRecall.innerHTML = '<p class="empty">' + (library.length
+        ? "Speak or type an ingredient and it gets checked against your " + library.length + " recipes."
+        : "Import your recipe history in the Library tab, then matches will show up here.") + "</p>";
+      elPreviewCard.hidden = true;
+      renderChips();
+      return;
+    }
+    elPreviewCard.hidden = false;
+    elPreview.innerHTML = highlight(elText.value) || '<span class="empty">nothing typed yet</span>';
+
+    var html = "";
+    terms.forEach(function (t) {
+      var e = index[t];
+      var recipes = e ? e.recipes : [], noteIds = e ? e.noteIds : [];
+      var seen = recipes.length + noteIds.length > 0;
+      var sub, tag;
+      if (recipes.length) {
+        tag = recipes.length + (recipes.length > 1 ? " recipes" : " recipe");
+        sub = "In <em>" + recipes.slice(0, 3).map(escHtml).join("</em>, <em>") + "</em>" +
+              (recipes.length > 3 ? " and " + (recipes.length - 3) + " more" : "");
+        if (noteIds.length) sub += " · " + noteIds.length + " earlier note" + (noteIds.length > 1 ? "s" : "");
+      } else if (noteIds.length) {
+        tag = "In notes";
+        sub = noteIds.length + " earlier note" + (noteIds.length > 1 ? "s" : "") + ", but not in your recipe sheet";
+      } else {
+        tag = "New";
+        sub = "No record of this anywhere yet";
+      }
+      html += '<div class="recall-item' + (seen ? "" : " fresh") + '">' +
+              '<div class="recall-head"><span class="pip"></span>' + escHtml(t) +
+              '<span class="tagword">' + escHtml(tag) + "</span></div>" +
+              '<div class="recall-sub">' + sub + "</div></div>";
+    });
+    elRecall.innerHTML = html;
+    renderChips();
+  }
+
+  function renderChips() {
+    var auto = detect(elText.value, false);
+    var html = "";
+    auto.forEach(function (t) {
+      var e = index[t], seen = e && (e.recipes.length + e.noteIds.length) > 0;
+      html += '<span class="chip ' + (seen ? "known" : "fresh") + '">' + escHtml(t) +
+              (e && e.recipes.length ? ' <span class="n">×' + e.recipes.length + "</span>" : "") + "</span>";
+    });
+    manual.forEach(function (t, i) {
+      var e = index[norm(t)], seen = e && (e.recipes.length + e.noteIds.length) > 0;
+      html += '<span class="chip ' + (seen ? "known" : "fresh") + '">' + escHtml(t) +
+              ' <span class="x" data-i="' + i + '" role="button" tabindex="0" aria-label="Remove ' + escHtml(t) + '">×</span></span>';
+    });
+    elChips.innerHTML = html;
+  }
+  elChips.addEventListener("click", function (ev) {
+    var x = ev.target.closest(".x"); if (!x) return;
+    manual.splice(+x.dataset.i, 1); renderRecall();
+  });
+
+  var tmr = null;
+  elText.addEventListener("input", function () { clearTimeout(tmr); tmr = setTimeout(renderRecall, 180); });
+
+  $("addIngBtn").addEventListener("click", addManual);
+  $("addIng").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addManual(); } });
+  function addManual() {
+    var v = $("addIng").value.trim();
+    if (!v) return;
+    v.split(",").forEach(function (p) { p = p.trim(); if (p && manual.indexOf(p) < 0) manual.push(p); });
+    $("addIng").value = ""; renderRecall();
+  }
+
+  elWhen.addEventListener("change", syncStamp);
+  $("nowBtn").addEventListener("click", function () { elWhen.value = localNow(); syncStamp(); });
+
+  /* ─────────── save / clear ─────────── */
+  $("save").addEventListener("click", function () {
+    var t = elText.value.trim();
+    if (!t && !manual.length && !pendingClip) { alert("Nothing to save yet."); return; }
+    var id = "n" + Date.now() + Math.floor(Math.random() * 1000);
+    var note = { id: id, when: elWhen.value || localNow(), text: t, manual: manual.slice(), clip: !!pendingClip };
+    var done = function () {
+      notes.unshift(note); save(K_NOTES, notes); rebuild(); resetForm(); renderTally();
+      $("clipNote").hidden = false; $("clipNote").innerHTML = "<b>Saved.</b> Find it under Ideas.";
+      setTimeout(function () { $("clipNote").hidden = true; }, 2600);
+    };
+    if (pendingClip) putClip(id, pendingClip).then(function (ok) { note.clip = ok; done(); });
+    else done();
+  });
+  $("clear").addEventListener("click", function () {
+    if (elText.value.trim() && !confirm("Clear this idea without saving?")) return;
+    resetForm();
+  });
+  function resetForm() {
+    elText.value = ""; manual = []; pendingClip = null;
+    elWhen.value = localNow(); syncStamp(); resetDialCopy(); renderRecall();
+  }
+
+  /* ─────────── ideas ─────────── */
+  $("search").addEventListener("input", renderNotes);
+  function renderNotes() {
+    var q = norm($("search").value);
+    var list = notes.filter(function (n) {
+      if (!q) return true;
+      return norm(n.text + " " + (n.manual || []).join(" ")).indexOf(q) >= 0;
+    });
+    $("logCount").textContent = list.length + " of " + notes.length + " idea" + (notes.length === 1 ? "" : "s");
+    if (!list.length) { elNotes.innerHTML = '<p class="empty">' + (notes.length ? "Nothing matches that." : "No ideas saved yet.") + "</p>"; return; }
+    elNotes.innerHTML = list.map(function (n) {
+      var chips = detect(n.text, false).concat((n.manual || []).map(norm));
+      var uniq = chips.filter(function (v, i) { return chips.indexOf(v) === i; });
+      return '<article class="note" data-id="' + n.id + '">' +
+        '<div class="note-top"><span class="when">' + escHtml(prettyWhen(n.when)) +
+        (n.pushed ? " · in sheet" : "") + "</span>" +
+        '<button class="btn ghost del" data-id="' + n.id + '" style="margin-left:auto">Delete</button></div>' +
+        (n.text ? '<div class="body">' + highlight(n.text) + "</div>" : "") +
+        (uniq.length ? '<div class="chips">' + uniq.map(function (t) {
+          var e = index[t], seen = e && e.recipes.length > 0;
+          return '<span class="chip ' + (seen ? "known" : "fresh") + '">' + escHtml(t) + "</span>";
+        }).join("") + "</div>" : "") +
+        (n.clip ? '<div class="clipslot" data-id="' + n.id + '"></div>' : "") +
+        "</article>";
+    }).join("");
+    Array.prototype.forEach.call(elNotes.querySelectorAll(".clipslot"), function (slot) {
+      getClip(slot.dataset.id).then(function (b) {
+        if (!b) { slot.innerHTML = '<p class="hint">Audio clip missing.</p>'; return; }
+        var a = document.createElement("audio");
+        a.controls = true; a.src = URL.createObjectURL(b); slot.appendChild(a);
+      });
+    });
+  }
+  elNotes.addEventListener("click", function (ev) {
+    var b = ev.target.closest(".del"); if (!b) return;
+    if (!confirm("Delete this idea for good?")) return;
+    var id = b.dataset.id;
+    notes = notes.filter(function (n) { return n.id !== id; });
+    save(K_NOTES, notes); delClip(id); rebuild(); renderNotes(); renderTally();
+  });
+
+  /* ─────────── library import ─────────── */
+  function parseTable(raw) {
+    raw = raw.replace(/\r\n?/g, "\n").trim();
+    if (!raw) return [];
+    var delim = (raw.split("\n")[0].indexOf("\t") >= 0) ? "\t" : ",";
+    var rows = [], row = [], cell = "", q = false;
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw[i];
+      if (q) {
+        if (c === '"') { if (raw[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += c;
+      } else if (c === '"') q = true;
+      else if (c === delim) { row.push(cell); cell = ""; }
+      else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    row.push(cell); rows.push(row);
+    return rows.filter(function (r) { return r.join("").trim() !== ""; });
+  }
+  function importRows(raw) {
+    var rows = parseTable(raw);
+    if (rows.length < 2) { msg("Need a header row plus at least one recipe.", true); return; }
+    var head = rows[0].map(function (h) { return norm(h); });
+    var iName = head.findIndex(function (h) { return /name|recipe|cocktail|drink|title/.test(h); });
+    var iIng = head.findIndex(function (h) { return /ingredient|spec|build|component/.test(h); });
+    var iNote = head.findIndex(function (h) { return /note|method|comment|remark/.test(h); });
+    if (iName < 0) iName = 0;
+    if (iIng < 0) iIng = head.length > 1 ? 1 : 0;
+
+    var added = 0;
+    rows.slice(1).forEach(function (r) {
+      var name = (r[iName] || "").trim();
+      var ingRaw = (r[iIng] || "").trim();
+      if (!name && !ingRaw) return;
+      library.push({
+        name: name || "(unnamed)",
+        ingredients: splitIngredients(ingRaw),
+        notes: iNote >= 0 ? (r[iNote] || "").trim() : ""
+      });
+      added++;
+    });
+    save(K_LIB, library); rebuild(); renderIndex(); renderTally(); renderRecall();
+    msg("Imported " + added + " recipe" + (added === 1 ? "" : "s") + ". Read “" + (rows[0][iIng] || "") + "” as the ingredients column.", false);
+  }
+  function msg(t, bad) { var m = $("importMsg"); m.textContent = t; m.style.color = bad ? "var(--orange)" : "var(--lime-deep)"; }
+
+  $("importBtn").addEventListener("click", function () {
+    importRows($("paste").value);
+    $("paste").value = "";
+  });
+  $("fileIn").addEventListener("change", function (ev) {
+    var f = ev.target.files[0]; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () { importRows(String(fr.result)); };
+    fr.readAsText(f);
+    ev.target.value = "";
+  });
+  $("wipeLib").addEventListener("click", function () {
+    if (!confirm("Remove all " + library.length + " imported recipes? Your own ideas stay.")) return;
+    library = []; save(K_LIB, library); rebuild(); renderIndex(); renderTally(); renderRecall();
+    msg("Library cleared.", false);
+  });
+
+  function renderIndex() {
+    var keys = Object.keys(index).filter(function (k) {
+      return index[k].recipes.length || index[k].noteIds.length;
+    }).sort(function (a, b) {
+      var d = (index[b].recipes.length + index[b].noteIds.length) - (index[a].recipes.length + index[a].noteIds.length);
+      return d || a.localeCompare(b);
+    });
+    if (!keys.length) { $("indexBody").innerHTML = '<tr><td colspan="4" class="empty">Nothing indexed yet — import a sheet or save an idea.</td></tr>'; return; }
+    $("indexBody").innerHTML = keys.map(function (k) {
+      var e = index[k];
+      return "<tr><td>" + escHtml(e.term) + '</td><td class="count">' + e.recipes.length +
+        '</td><td class="count">' + e.noteIds.length + "</td><td>" +
+        escHtml(e.recipes.slice(-2).reverse().join(", ") || "—") + "</td></tr>";
+    }).join("");
+  }
+
+  /* ─────────── export ─────────── */
+  function csvCell(v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function notesCsv() {
+    var out = ["Date,Time,Idea,Ingredients,Has audio"];
+    notes.slice().reverse().forEach(function (n) {
+      var d = new Date(n.when);
+      var terms = detect(n.text, false).concat((n.manual || []).map(norm));
+      var uniq = terms.filter(function (v, i) { return terms.indexOf(v) === i; });
+      out.push([
+        csvCell(isNaN(d) ? n.when : d.toLocaleDateString()),
+        csvCell(isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })),
+        csvCell(n.text), csvCell(uniq.join("; ")), n.clip ? "yes" : ""
+      ].join(","));
+    });
+    return out.join("\n");
+  }
+  $("copyCsv").addEventListener("click", function () {
+    var t = notesCsv(), btn = $("copyCsv");
+    var ok = function () { btn.textContent = "Copied ✓"; setTimeout(function () { btn.textContent = "Copy as CSV"; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, showCsv);
+    else showCsv();
+  });
+  function showCsv() { var o = $("csvOut"); o.hidden = false; o.value = notesCsv(); o.style.minHeight = "12rem"; o.select(); }
+  $("showCsv").addEventListener("click", showCsv);
+
+  /* ─────────── google sheets bridge ─────────── */
+  var K_GS = "railnotes.sheets.v1";
+  var gs = load(K_GS, { url: "", key: "" });
+  $("gsUrl").value = gs.url || "";
+  $("gsKey").value = gs.key || "";
+
+  function gsSay(t, bad) {
+    var m = $("gsMsg"); m.textContent = t;
+    m.style.color = bad ? "var(--orange)" : "var(--lime-deep)";
+  }
+  function gsRemember() {
+    gs = { url: $("gsUrl").value.trim(), key: $("gsKey").value.trim() };
+    save(K_GS, gs);
+    return gs;
+  }
+  $("gsSave").addEventListener("click", function () { gsRemember(); gsSay("Saved on this device.", false); });
+
+  function gsReady() {
+    var c = gsRemember();
+    if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url)) {
+      gsSay("That doesn't look like an Apps Script /exec URL.", true); return null;
+    }
+    if (!c.key) { gsSay("Add the shared key from the script.", true); return null; }
+    return c;
+  }
+  /* a blocked fetch throws TypeError with no status — say what's actually wrong */
+  function gsFail(err) {
+    var net = (err && err.name === "TypeError");
+    gsSay(net
+      ? "Couldn't reach the script. If you're viewing this as a Claude artifact, outbound requests are blocked here — open the same file from your own hosting and sync will work."
+      : "Sync failed: " + (err && err.message ? err.message : String(err)), true);
+  }
+
+  $("gsPull").addEventListener("click", function () {
+    var c = gsReady(); if (!c) return;
+    gsSay("Pulling…", false);
+    fetch(c.url + (c.url.indexOf("?") < 0 ? "?" : "&") + "key=" + encodeURIComponent(c.key), { redirect: "follow" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { gsSay(d.error || "The script refused that.", true); return; }
+        library = (d.recipes || []).map(function (r) {
+          return { name: r.name || "(unnamed)", ingredients: splitIngredients(r.ingredients), notes: r.notes || "" };
+        });
+        save(K_LIB, library); rebuild(); renderIndex(); renderTally(); renderRecall();
+        gsSay("Pulled " + library.length + " recipe" + (library.length === 1 ? "" : "s") +
+              (d.sheet ? " from “" + d.sheet + "”." : "."), false);
+      })
+      .catch(gsFail);
+  });
+
+  $("gsPush").addEventListener("click", function () {
+    var c = gsReady(); if (!c) return;
+    var queue = notes.filter(function (n) { return !n.pushed; });
+    if (!queue.length) { gsSay("Nothing new to push — every idea is already up there.", false); return; }
+    gsSay("Pushing " + queue.length + "…", false);
+    var payload = {
+      key: c.key,
+      ideas: queue.map(function (n) {
+        var terms = detect(n.text, false).concat((n.manual || []).map(norm));
+        return {
+          id: n.id,
+          when: prettyWhen(n.when),
+          text: n.text,
+          clip: !!n.clip,
+          ingredients: terms.filter(function (v, i) { return terms.indexOf(v) === i; })
+        };
+      })
+    };
+    /* text/plain keeps it a simple request — Apps Script handles CORS preflight poorly */
+    fetch(c.url, {
+      method: "POST", redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { gsSay(d.error || "The script refused that.", true); return; }
+        queue.forEach(function (n) { n.pushed = true; });
+        save(K_NOTES, notes);
+        gsSay("Pushed " + d.added + " idea" + (d.added === 1 ? "" : "s") +
+              (d.skipped ? ", " + d.skipped + " already there." : "."), false);
+      })
+      .catch(gsFail);
+  });
+
+  /* shared with the paste importer so both paths clean rows the same way */
+  function splitIngredients(raw) {
+    var UNIT = "ml|cl|oz|ounces?|dash(es)?|bar ?spoons?|bsp|tsp|tbsp|drops?|parts?|shots?|pinch(es)?|sprigs?|slices?|wedges?|leaf|leaves|cups?|g";
+    var unitRe = new RegExp("^(\\d+(\\.\\d+)?(\\s*\\d\\/\\d)?|\\d\\/\\d)\\s*(" + UNIT + ")\\b\\.?\\s*", "i");
+    var bareRe = new RegExp("^(\\d+(\\.\\d+)?(\\s*\\d\\/\\d)?|\\d\\/\\d)\\s*(" + UNIT + ")?\\.?\\s+", "i");
+    return String(raw || "").split(/[,;|\n]+/).map(function (s) {
+      s = s.trim().replace(/^[\s\-•*]+/, "").replace(unitRe, "").replace(bareRe, "");
+      return s.replace(/^of\s+/i, "").trim();
+    }).filter(Boolean);
+  }
+
+  /* ─────────── hardware back button (Android) ─────────── */
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener("backButton", function () {
+      /* back returns to Capture rather than killing the app mid-thought */
+      if ($("tab-capture").getAttribute("aria-selected") !== "true") $("tab-capture").click();
+      else window.Capacitor.Plugins.App.minimizeApp && window.Capacitor.Plugins.App.minimizeApp();
+    });
+  }
+
+  function renderTally() {
+    var pl = function (n, w) { return n + " " + w + (n === 1 ? "" : "s"); };
+    $("tally").textContent = pl(notes.length, "idea") + " · " + pl(library.length, "recipe");
+  }
+
+  /* ─────────── boot ─────────── */
+  /* order matters: SR is assigned above, so resetDialCopy() can read it. */
+  rebuild();
+  elWhen.value = localNow();
+  syncStamp();
+  resetDialCopy();
+  renderTally();
+  renderRecall();
+  renderNotes();
+})();
+</script>
+</body>
+</html>

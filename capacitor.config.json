@@ -1,0 +1,19 @@
+{
+  "appId": "com.jackrussell.railnotes",
+  "appName": "Rail Notes",
+  "webDir": "www",
+  "backgroundColor": "#F3EFE5",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#F3EFE5"
+  },
+  "android": {
+    "backgroundColor": "#F3EFE5",
+    "allowMixedContent": false
+  }
+}
